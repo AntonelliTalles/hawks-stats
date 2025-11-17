@@ -1,0 +1,6 @@
+components/EditScreenInfo.tsx
+components/ExternalLink.tsx
+components/Themed.tsx
+components/__tests__/**
+app/modal.tsx
+app/[...missing].tsx
