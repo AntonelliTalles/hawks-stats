@@ -96,3 +96,49 @@ src/
     StatStepper.tsx       # componente genérico para + / - stats
   utils/
     zodSchemas.ts         # schemas de validação (forms)
+
+
+Como rodar localmente
+1. Pré-requisitos
+
+Node.js (recomendado LTS)
+
+npm ou yarn
+
+Conta no Supabase
+
+2. Clonar o projeto
+git clone [REPO]
+cd hawks-stats
+npm install
+
+3. Configurar Supabase
+
+Crie um projeto no Supabase.
+
+Copie:
+
+Project URL
+
+anon public key
+
+Na raiz do projeto, crie um arquivo .env:
+
+EXPO_PUBLIC_SUPABASE_URL="https://SEU-PROJETO.supabase.co"
+EXPO_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5..."
+
+
+Rode os scripts SQL das tabelas (skaters, goalies, profiles, RPC, RLS) no SQL Editor do Supabase.
+
+(Opcional) Você pode criar um arquivo supabase/schema.sql com o schema completo para versionar a parte de banco também.
+
+4. Rodar o app
+npm start
+
+
+Abra no emulador, no Expo Go ou no device.
+
+Scripts
+npm start        # inicia o Expo
+npm run lint     # roda ESLint
+npm run typecheck# roda TypeScript (tsc --noEmit)
