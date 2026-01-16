@@ -1,45 +1,132 @@
 import React, { useState } from 'react';
-import { FlatList } from 'react-native';
-import { Box, Button, Heading, HStack, Text, VStack } from 'native-base';
-import { useSkaters, useIncrementSkater } from '../../src/hooks/useSkaters';
+import { FlatList, StyleSheet, Text, View, Pressable, ActivityIndicator } from 'react-native';
+import { useSkaters } from '../../src/hooks/useSkaters';
 import { StatStepper } from '../../src/components/StatStepper';
 
-export default function ManageSkaters() {
-  const { data } = useSkaters();
-  const inc = useIncrementSkater();
-  const [draft, setDraft] = useState<Record<string, { g: number; a: number }>>({});
+type DraftRow = { g: number; a: number };
 
-  const setValue = (id: string, key: 'g'|'a', v: number) => {
-    setDraft((d) => ({ ...d, [id]: { g: d[id]?.g ?? 0, a: d[id]?.a ?? 0, [key]: v } as any }));
+export default function ManageSkaters() {
+  const { skaters, incrementStats, isIncrementing } = useSkaters();
+
+  const [draft, setDraft] = useState<Record<string, DraftRow>>({});
+
+  const setValue = (id: string, key: 'g' | 'a', v: number) => {
+    setDraft((prev) => ({
+      ...prev,
+      [id]: {
+        g: prev[id]?.g ?? 0,
+        a: prev[id]?.a ?? 0,
+        [key]: v,
+      },
+    }));
   };
 
   return (
-    <Box safeArea p="4">
-      <Heading mb="4">Gerenciar Skaters</Heading>
+    <View style={styles.screen}>
+      <Text style={styles.title}>Gerenciar Skaters</Text>
+
       <FlatList
-        data={data}
+        data={skaters}
         keyExtractor={(i) => i.id}
         renderItem={({ item }) => {
           const row = draft[item.id] ?? { g: 0, a: 0 };
+
           return (
-            <VStack mb="4" p="3" borderWidth={1} borderColor="coolGray.200" rounded="lg" space="2">
-              <HStack justifyContent="space-between">
-                <Text bold>{item.name}</Text>
-                <Text color="coolGray.500">G{item.goals} / A{item.assists} / P{item.points}</Text>
-              </HStack>
-              <StatStepper label="Δ Gols" value={row.g} onChange={(v) => setValue(item.id, 'g', v)} />
-              <StatStepper label="Δ Assists" value={row.a} onChange={(v) => setValue(item.id, 'a', v)} />
-              <Button
-                mt="2"
-                onPress={() => inc.mutate({ skater_id: item.id, goals_delta: row.g, assists_delta: row.a })}
-                isLoading={inc.isPending}
+            <View style={styles.card}>
+              <View style={styles.rowHeader}>
+                <Text style={styles.bold}>{item.name}</Text>
+                <Text style={styles.muted}>
+                  G{item.goals} / A{item.assists} / P{item.points}
+                </Text>
+              </View>
+
+              <View style={styles.stepperBlock}>
+                <Text style={styles.label}>Δ Gols</Text>
+                <StatStepper value={row.g} onChange={(v) => setValue(item.id, 'g', v)} />
+              </View>
+
+              <View style={styles.stepperBlock}>
+                <Text style={styles.label}>Δ Assistências</Text>
+                <StatStepper value={row.a} onChange={(v) => setValue(item.id, 'a', v)} />
+              </View>
+
+              <Pressable
+                style={[styles.button, isIncrementing && styles.buttonDisabled]}
+                disabled={isIncrementing}
+                onPress={async () => {
+                  if (row.g === 0 && row.a === 0) return;
+
+                  await incrementStats({
+                    skater_id: item.id,
+                    goals_delta: row.g,
+                    assists_delta: row.a,
+                  });
+
+                  setDraft((d) => ({ ...d, [item.id]: { g: 0, a: 0 } }));
+                }}
               >
-                Salvar incrementos
-              </Button>
-            </VStack>
+                {isIncrementing ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Salvar incrementos</Text>
+                )}
+              </Pressable>
+            </View>
           );
         }}
       />
-    </Box>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    padding: 16,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  card: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  rowHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  bold: {
+    fontWeight: '700',
+  },
+  muted: {
+    color: '#6b7280',
+  },
+  stepperBlock: {
+    marginBottom: 12,
+    gap: 6,
+  },
+  label: {
+    fontSize: 12,
+    color: '#374151',
+  },
+  button: {
+    marginTop: 8,
+    backgroundColor: '#111827',
+    paddingVertical: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+});
