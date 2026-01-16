@@ -1,110 +1,219 @@
 import React, { useState } from 'react';
-import { FlatList } from 'react-native';
-import { Box, Button, Heading, HStack, IconButton, Modal, Text, VStack } from 'native-base';
-import { useAdminGuard } from '../../src/hooks/useAdminGuard';
-import { useSkaters } from '../../src/hooks/useSkaters';
-import { SkaterForm, SkaterFormValues } from '../../src/components/SkaterForm';
-import { supabase } from '../../src/services/supabase';
+import {
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-type Skater = {
-  id: string; name: string; number?: number; position: 'C'|'LW'|'RW'|'D';
-  goals: number; assists: number; points: number; is_active: boolean;
-};
+import { useAdminGuard } from '../../src/hooks/useAdminGuard';
+import { useSkaters, type Skater } from '../../src/hooks/useSkaters';
+import { SkaterForm, SkaterFormValues } from '../../src/components/SkaterForm';
+import { supabase } from '../../src/services/supabase';
 
 export default function SkatersCrud() {
   const allowed = useAdminGuard();
-  const { data, refetch, isFetching } = useSkaters();
+  const { skaters, refetch, isFetching } = useSkaters();
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Skater | null>(null);
 
-  const list = data ?? [];
+  if (allowed === null) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator />
+        <Text style={styles.muted}>Verificando permissões...</Text>
+      </View>
+    );
+  }
 
-  if (allowed === null) return <Text>Verificando permissões...</Text>;
+  if (!allowed) {
+    return (
+      <View style={styles.screen}>
+        <Text style={styles.title}>Skaters — CRUD</Text>
+        <Text>Você não tem permissão para acessar esta área.</Text>
+      </View>
+    );
+  }
 
   const handleCreate = async (values: SkaterFormValues) => {
     const { error } = await supabase.from('skaters').insert(values);
     if (!error) {
-        setOpen(false);
-        await refetch();
+      setOpen(false);
+      await refetch();
     }
   };
 
   const handleUpdate = async (id: string, values: SkaterFormValues) => {
     const { error } = await supabase.from('skaters').update(values).eq('id', id);
     if (!error) {
-        setEditing(null);
-        await refetch();
+      setEditing(null);
+      await refetch();
     }
   };
+
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('skaters').delete().eq('id', id);
     if (!error) await refetch();
   };
 
   return (
-    <Box safeArea p="4">
-      <HStack justifyContent="space-between" alignItems="center" mb="4">
-        <Heading>Skaters — CRUD</Heading>
-        <Button onPress={() => setOpen(true)}>Novo Skater</Button>
-      </HStack>
+    <View style={styles.screen}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Skaters — CRUD</Text>
+
+        <Pressable style={styles.primaryButton} onPress={() => setOpen(true)}>
+          <Text style={styles.primaryButtonText}>Novo Skater</Text>
+        </Pressable>
+      </View>
 
       <FlatList
-        data={list}
+        data={skaters}
+        keyExtractor={(i) => i.id}
         refreshing={isFetching}
         onRefresh={refetch}
-        keyExtractor={(i) => i.id}
         renderItem={({ item }) => (
-          <VStack mb="3" p="3" borderWidth={1} borderColor="coolGray.200" rounded="lg" space="1">
-            <HStack justifyContent="space-between">
-              <Text bold>{item.name} #{item.number ?? '-'}</Text>
-              <HStack space="2">
-                <IconButton
-                  icon={<Ionicons name="create-outline" size={18} />}
-                  onPress={() => setEditing(item)}
-                />
-                <IconButton
-                  icon={<Ionicons name="trash-outline" size={18} />}
-                  onPress={() => handleDelete(item.id)}
-                />
-              </HStack>
-            </HStack>
-            <Text color="coolGray.500">{item.position} • G{item.goals} / A{item.assists} / P{item.points} • {item.is_active ? 'Ativo' : 'Inativo'}</Text>
-          </VStack>
+          <View style={styles.card}>
+            <View style={styles.row}>
+              <Text style={styles.bold}>
+                {item.name} #{item.number ?? '-'}
+              </Text>
+
+              <View style={styles.actions}>
+                <Pressable onPress={() => setEditing(item)}>
+                  <Ionicons name="create-outline" size={18} />
+                </Pressable>
+                <Pressable onPress={() => handleDelete(item.id)}>
+                  <Ionicons name="trash-outline" size={18} />
+                </Pressable>
+              </View>
+            </View>
+
+            <Text style={styles.muted}>
+              {item.position} • G{item.goals} / A{item.assists} / P{item.points} •{' '}
+              {item.is_active ? 'Ativo' : 'Inativo'}
+            </Text>
+          </View>
         )}
       />
 
-      {/* Modal novo */}
-      <Modal isOpen={open} onClose={() => setOpen(false)}>
-        <Modal.Content>
-          <Modal.CloseButton />
-          <Modal.Header>Novo Skater</Modal.Header>
-          <Modal.Body>
+      {/* Modal criar */}
+      <Modal visible={open} transparent animationType="slide">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Novo Skater</Text>
             <SkaterForm onSubmit={handleCreate} />
-          </Modal.Body>
-        </Modal.Content>
+            <Pressable style={styles.cancel} onPress={() => setOpen(false)}>
+              <Text>Cancelar</Text>
+            </Pressable>
+          </View>
+        </View>
       </Modal>
 
       {/* Modal editar */}
-      <Modal isOpen={!!editing} onClose={() => setEditing(null)}>
-        <Modal.Content>
-          <Modal.CloseButton />
-          <Modal.Header>Editar Skater</Modal.Header>
-          <Modal.Body>
+      <Modal visible={!!editing} transparent animationType="slide">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Editar Skater</Text>
+
             {editing && (
               <SkaterForm
                 defaultValues={{
                   name: editing.name,
-                  number: editing.number,
+                  number: editing.number ?? undefined,
                   position: editing.position,
                   is_active: editing.is_active,
                 }}
                 onSubmit={(v) => handleUpdate(editing.id, v)}
               />
             )}
-          </Modal.Body>
-        </Modal.Content>
+
+            <Pressable style={styles.cancel} onPress={() => setEditing(null)}>
+              <Text>Cancelar</Text>
+            </Pressable>
+          </View>
+        </View>
       </Modal>
-    </Box>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    padding: 16,
+  },
+  center: {
+    flex: 1,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  card: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  bold: {
+    fontWeight: '700',
+  },
+  muted: {
+    color: '#6b7280',
+  },
+  primaryButton: {
+    backgroundColor: '#111827',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  modal: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  cancel: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
+});
