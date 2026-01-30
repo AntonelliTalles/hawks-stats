@@ -1,35 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../services/supabase';
-
-export type Skater = {
-  id: string;
-  name: string;
-  number: number | null;
-  position: 'C' | 'LW' | 'RW' | 'D';
-  goals: number;
-  assists: number;
-  points: number;
-  is_active: boolean;
-};
+// import type { Skater } from "../types/skater";
+import { listSkaters, incrementSkaterStats } from '../services/skaters.firestore';
 
 export function useSkaters() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
 
-  const skatersQuery = useQuery({
+  const query = useQuery({
     queryKey: ['skaters'],
-    queryFn: async (): Promise<Skater[]> => {
-      const { data, error } = await supabase
-        .from('skaters')
-        .select('*')
-        .order('points', { ascending: false });
-
-      if (error) {
-        console.error('Erro ao carregar skaters', error);
-        throw error;
-      }
-
-      return (data ?? []) as Skater[];
-    },
+    queryFn: listSkaters,
   });
 
   const incrementMutation = useMutation({
@@ -37,26 +15,19 @@ export function useSkaters() {
       skater_id: string;
       goals_delta: number;
       assists_delta: number;
-    }) => {
-      const { error } = await supabase.rpc('increment_skater_stats', payload);
-      if (error) {
-        console.error('Erro ao incrementar stats', error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['skaters'] });
+    }) => incrementSkaterStats(payload.skater_id, payload.goals_delta, payload.assists_delta),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['skaters'] });
     },
   });
 
   return {
-    skaters: skatersQuery.data ?? [],
-    isLoading: skatersQuery.isLoading,
-    isFetching: skatersQuery.isFetching,
-    isError: skatersQuery.isError,
-    error: skatersQuery.error,
-    refetch: skatersQuery.refetch,
-
+    skaters: query.data ?? [],
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    isError: query.isError,
+    error: (query.error as Error) ?? null,
+    refetch: query.refetch,
     incrementStats: incrementMutation.mutateAsync,
     isIncrementing: incrementMutation.isPending,
   };

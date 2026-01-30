@@ -6,7 +6,7 @@ O foco do projeto é:
 
 - treinar **React Native + Expo** do zero, aproveitando experiência prévia em React web;
 - aplicar uma arquitetura simples, mas organizada;
-- usar **Supabase** como backend (Auth + Postgres + RLS);
+- usar **Firebase** como backend (Auth + Postgres + RLS);
 - ter um projeto **bem versionado** para portfólio (GitHub + LinkedIn).
 
 ---
@@ -22,7 +22,7 @@ O foco do projeto é:
   - [@tanstack/react-query](https://tanstack.com/query) (data fetching/cache)
   - `react-hook-form` + `zod` (forms e validação)
 - **Backend**
-  - [Supabase](https://supabase.com/)
+  - [Firebase](https://firebase.com/)
     - Auth (e-mail/senha)
     - Postgres
     - RLS (Row Level Security)
@@ -54,7 +54,7 @@ O foco do projeto é:
 Apenas para usuários com `role = 'admin'` na tabela `profiles`:
 
 - **Login admin**
-  - autenticação via Supabase Auth (e-mail/senha)
+  - autenticação via Firebase Auth (e-mail/senha)
   - guarda sessão localmente com AsyncStorage
 - **CRUD de skaters**
   - criar / editar / remover jogadores
@@ -62,7 +62,7 @@ Apenas para usuários com `role = 'admin'` na tabela `profiles`:
 - **CRUD de goalies**
   - criar / editar / remover goleiros
 - **Incremento de stats**
-  - uso de RPC no Supabase para incrementar/decrementar:
+  - uso de RPC no Firebase para incrementar/decrementar:
     - skaters: gols / assistências
     - goalies: GS / SA / SV / W / SO
   - consistente e atômico, sem race conditions
@@ -84,7 +84,7 @@ app/
     manage-goalies.tsx    # CRUD de goalies
 src/
   services/
-    supabase.ts           # client do Supabase
+    firebase.ts           # client do Firebase
     session.ts            # helpers de sessão
   hooks/
     useSkaters.ts         # fetch + mutations de skaters
@@ -105,16 +105,16 @@ Node.js (recomendado LTS)
 
 npm ou yarn
 
-Conta no Supabase
+Conta no Firebase
 
 2. Clonar o projeto
 git clone [REPO]
 cd hawks-stats
 npm install
 
-3. Configurar Supabase
+3. Configurar Firebase
 
-Crie um projeto no Supabase.
+Crie um projeto no Firebase.
 
 Copie:
 
@@ -124,13 +124,17 @@ anon public key
 
 Na raiz do projeto, crie um arquivo .env:
 
-EXPO_PUBLIC_SUPABASE_URL="https://SEU-PROJETO.supabase.co"
-EXPO_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5..."
+EXPO_PUBLIC_FIREBASE_API_KEY=""
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN="hawks-stats.firebaseapp.com"
+EXPO_PUBLIC_FIREBASE_PROJECT_ID="hawks-stats"
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET="hawks-stats.firebasestorage.app"
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=""
+EXPO_PUBLIC_FIREBASE_APP_ID=""
 
 
-Rode os scripts SQL das tabelas (skaters, goalies, profiles, RPC, RLS) no SQL Editor do Supabase.
+Rode os scripts SQL das tabelas (skaters, goalies, profiles, RPC, RLS) no SQL Editor do Firebase.
 
-(Opcional) Você pode criar um arquivo supabase/schema.sql com o schema completo para versionar a parte de banco também.
+(Opcional) Você pode criar um arquivo firebase/schema.sql com o schema completo para versionar a parte de banco também.
 
 4. Rodar o app
 npm start
