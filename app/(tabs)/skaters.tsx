@@ -1,51 +1,118 @@
 import React from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSkaters } from '../../src/hooks/useSkaters';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SkatersScreen() {
-  const { skaters, isLoading, error } = useSkaters();
+  const { skaters, isLoading, isError } = useSkaters();
 
-  if (isLoading) return <Text>Carregando...</Text>;
-  if (error) return <Text>Erro ao carregar</Text>;
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.center}>
+        <ActivityIndicator />
+        <Text style={styles.muted}>Carregando skaters...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (isError) {
+    return (
+      <SafeAreaView style={styles.center}>
+        <Text style={styles.error}>Erro ao carregar skaters.</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
-        Chicago Blackhawks — Skaters
-      </Text>
+    <SafeAreaView style={styles.screen}>
+      <Text style={styles.title}>Chicago Blackhawks — Skaters</Text>
 
-      <View style={{ flexDirection: 'row', marginBottom: 8 }}>
-        <Text style={{ flex: 2, fontWeight: '700' }}>Jogador</Text>
-        <Text style={{ width: 40, textAlign: 'right', fontWeight: '700' }}>G</Text>
-        <Text style={{ width: 40, textAlign: 'right', fontWeight: '700' }}>A</Text>
-        <Text style={{ width: 40, textAlign: 'right', fontWeight: '700' }}>P</Text>
+      {/* Cabeçalho da "tabela" */}
+      <View style={[styles.row, styles.headerRow]}>
+        <Text style={[styles.headerText, styles.colPlayer]}>Jogador</Text>
+        <Text style={[styles.headerText, styles.colStat]}>G</Text>
+        <Text style={[styles.headerText, styles.colStat]}>A</Text>
+        <Text style={[styles.headerText, styles.colStat]}>P</Text>
       </View>
 
       <FlatList
         data={skaters}
-        keyExtractor={(i) => i.id}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View
-            style={{
-              flexDirection: 'row',
-              paddingVertical: 12,
-              borderBottomWidth: 1,
-              borderColor: '#e5e7eb',
-            }}
-          >
-            <View style={{ flex: 2 }}>
-              <Text style={{ fontWeight: '700' }}>
+          <View style={styles.row}>
+            <View style={styles.colPlayer}>
+              <Text style={styles.playerName}>
                 {item.name} #{item.number ?? '-'}
               </Text>
-              <Text style={{ color: '#6b7280' }}>{item.position}</Text>
+              <Text style={styles.muted}>{item.position}</Text>
             </View>
 
-            <Text style={{ width: 40, textAlign: 'right' }}>{item.goals}</Text>
-            <Text style={{ width: 40, textAlign: 'right' }}>{item.assists}</Text>
-            <Text style={{ width: 40, textAlign: 'right' }}>{item.points}</Text>
+            <Text style={[styles.colStat, styles.statValue]}>{item.goals}</Text>
+            <Text style={[styles.colStat, styles.statValue]}>{item.assists}</Text>
+            <Text style={[styles.colStat, styles.statValue]}>{item.points}</Text>
           </View>
         )}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
-    </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#ffffff', // se quiser tirar aquela faixa branca, depois podemos alinhar bg global
+  },
+  center: {
+    flex: 1,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#ffffff',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  headerRow: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#D1D5DB',
+    marginBottom: 4,
+  },
+  headerText: {
+    fontWeight: '700',
+    color: '#374151',
+  },
+  colPlayer: {
+    flex: 2,
+  },
+  colStat: {
+    width: 32,
+    textAlign: 'right',
+  },
+  playerName: {
+    fontWeight: '600',
+  },
+  statValue: {
+    color: '#111827',
+  },
+  muted: {
+    color: '#6B7280',
+    fontSize: 12,
+  },
+  error: {
+    color: '#b00020',
+  },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#E5E7EB',
+  },
+});
