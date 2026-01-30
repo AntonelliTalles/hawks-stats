@@ -3,8 +3,9 @@ import { Controller, useForm } from 'react-hook-form';
 import { View, Text, TextInput, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { supabase } from '../../src/services/supabase';
 import { router } from 'expo-router';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../src/services/firebase';
 
 const schema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -24,18 +25,12 @@ export default function Login() {
   });
 
   const onSubmit = async (values: FormData) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: values.email,
-      password: values.password,
-    });
-
-    if (error) {
-      // TODO: exibir toast/erro na tela
-      console.log(error.message);
-      return;
+    try {
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      router.replace('/admin/adjust-skaters');
+    } catch (e: any) {
+      console.log('Erro login:', e.message);
     }
-
-    router.replace('/admin/adjust-skaters');
   };
 
   return (

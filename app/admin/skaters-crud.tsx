@@ -11,9 +11,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAdminGuard } from '../../src/hooks/useAdminGuard';
-import { useSkaters, type Skater } from '../../src/hooks/useSkaters';
+import { useSkaters } from '../../src/hooks/useSkaters';
+import type { Skater } from '../../src/types/skater';
 import { SkaterForm, SkaterFormValues } from '../../src/components/SkaterForm';
-import { supabase } from '../../src/services/supabase';
+import { createSkater, updateSkater, deleteSkater } from '../../src/services/skaters.firestore';
 
 export default function SkatersCrud() {
   const allowed = useAdminGuard();
@@ -41,24 +42,32 @@ export default function SkatersCrud() {
   }
 
   const handleCreate = async (values: SkaterFormValues) => {
-    const { error } = await supabase.from('skaters').insert(values);
-    if (!error) {
-      setOpen(false);
-      await refetch();
-    }
+    await createSkater({
+      name: values.name,
+      number: values.number,
+      position: values.position,
+      is_active: values.is_active,
+    });
+
+    setOpen(false);
+    await refetch();
   };
 
   const handleUpdate = async (id: string, values: SkaterFormValues) => {
-    const { error } = await supabase.from('skaters').update(values).eq('id', id);
-    if (!error) {
-      setEditing(null);
-      await refetch();
-    }
+    await updateSkater(id, {
+      name: values.name,
+      number: values.number,
+      position: values.position,
+      is_active: values.is_active,
+    });
+
+    setEditing(null);
+    await refetch();
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('skaters').delete().eq('id', id);
-    if (!error) await refetch();
+    await deleteSkater(id);
+    await refetch();
   };
 
   return (
