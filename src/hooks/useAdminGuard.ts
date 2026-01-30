@@ -13,5 +13,18 @@ export function useAdminGuard() {
     })();
   }, []);
 
-  return allowed; // null = carregando, true = ok
+  return allowed;
 }
+
+// import { useEffect, useState } from 'react';
+
+// export function useAdminGuard() {
+//   const [allowed, setAllowed] = useState<boolean | null>(null);
+
+//   useEffect(() => {
+//     // DEV: sempre libera admin
+//     setAllowed(true);
+//   }, []);
+
+//   return allowed;
+// }

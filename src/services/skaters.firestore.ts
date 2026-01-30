@@ -1,83 +1,68 @@
 import {
+  addDoc,
   collection,
   deleteDoc,
   doc,
   getDocs,
+  increment,
   orderBy,
   query,
-  setDoc,
   updateDoc,
-  increment,
 } from 'firebase/firestore';
-import { db } from './firebase';
-import type { Skater } from '../types/skater';
 
-const colRef = collection(db, 'skaters');
+import { db } from './firebase';
+import type { Skater, SkaterBaseInput } from '../types/skater';
+
+const skatersCol = collection(db, 'skaters');
 
 export async function listSkaters(): Promise<Skater[]> {
-  const q = query(colRef, orderBy('name', 'asc'));
+  const q = query(skatersCol, orderBy('name', 'asc'));
   const snap = await getDocs(q);
 
   return snap.docs.map((d) => {
     const data = d.data() as Omit<Skater, 'id'> & { number?: number | null };
+
     return {
       id: d.id,
       ...data,
-      number: data.number ?? undefined, // força undefined (nunca null)
+      number: data.number ?? undefined,
     };
   });
 }
 
-export type CreateSkaterInput = {
-  name: string;
-  number?: number;
-  position: Skater['position'];
-  is_active: boolean;
-};
-
-export async function createSkater(values: CreateSkaterInput) {
-  const ref = doc(colRef);
-
+export async function createSkater(values: SkaterBaseInput) {
   const payload: Omit<Skater, 'id'> = {
-    name: values.name,
-    number: values.number ?? undefined,
-    position: values.position,
+    ...values,
     goals: 0,
     assists: 0,
     points: 0,
-    is_active: values.is_active,
   };
 
-  await setDoc(ref, payload);
+  const ref = await addDoc(skatersCol, payload);
   return ref.id;
 }
 
-export async function updateSkater(id: string, values: Partial<Skater>) {
-  const ref = doc(colRef, id);
+export async function updateSkater(id: string, values: SkaterBaseInput) {
+  const ref = doc(skatersCol, id);
 
-  const patch: any = { ...values };
+  const patch: Partial<Omit<Skater, 'id'>> = { ...values };
 
-  // normaliza number (não salva null)
-  if ('number' in patch && patch.number == null) delete patch.number;
-
-  // se mexer em goals/assists, recalcula points
-  if ('goals' in patch || 'assists' in patch) {
-    // a forma simples: manter points sempre atualizado via incrementStats (ver abaixo)
-    // aqui a gente só recalcula se vierem ambos:
-    if (typeof patch.goals === 'number' && typeof patch.assists === 'number') {
-      patch.points = patch.goals + patch.assists;
-    }
+  // se number vier vazio, não salva null
+  if (patch.number == null) {
+    delete patch.number;
   }
 
   await updateDoc(ref, patch);
 }
 
 export async function deleteSkater(id: string) {
-  await deleteDoc(doc(colRef, id));
+  const ref = doc(skatersCol, id);
+  await deleteDoc(ref);
 }
 
 export async function incrementSkaterStats(id: string, goalsDelta: number, assistsDelta: number) {
-  const ref = doc(colRef, id);
+  const ref = doc(skatersCol, id);
+
   await updateDoc(ref, {
     goals: increment(goalsDelta),
     assists: increment(assistsDelta),
