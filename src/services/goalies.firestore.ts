@@ -9,8 +9,20 @@ import {
   updateDoc,
   increment,
 } from 'firebase/firestore';
+
 import { db } from './firebase';
-import type { Goalie } from '../types/goalie';
+
+export type Goalie = {
+  id: string;
+  name: string;
+  games_started: number;
+  shots_against: number;
+  saves: number;
+  save_pct: number;
+  wins: number;
+  shutouts: number;
+  is_active: boolean;
+};
 
 const colRef = collection(db, 'goalies');
 
@@ -19,31 +31,26 @@ export async function listGoalies(): Promise<Goalie[]> {
   const snap = await getDocs(q);
 
   return snap.docs.map((d) => {
-    const data = d.data() as Omit<Goalie, 'id'> & { number?: number | null };
-    return { id: d.id, ...data, number: data.number ?? undefined };
+    const data = d.data() as Omit<Goalie, 'id'>;
+    return {
+      id: d.id,
+      ...data,
+    };
   });
 }
 
-export async function createGoalie(values: Omit<Goalie, 'id'>) {
+type CreateGoalieInput = Omit<Goalie, 'id'>;
+
+export async function createGoalie(values: CreateGoalieInput) {
   const ref = doc(colRef);
-  const payload: Omit<Goalie, 'id'> = {
-    ...values,
-    number: values.number ?? undefined,
-    games_started: values.games_started ?? 0,
-    shots_against: values.shots_against ?? 0,
-    saves: values.saves ?? 0,
-    wins: values.wins ?? 0,
-    shutouts: values.shutouts ?? 0,
-  };
-  await setDoc(ref, payload);
+
+  await setDoc(ref, values);
   return ref.id;
 }
 
-export async function updateGoalie(id: string, values: Partial<Goalie>) {
+export async function updateGoalie(id: string, values: Partial<CreateGoalieInput>) {
   const ref = doc(colRef, id);
-  const patch: any = { ...values };
-  if ('number' in patch && patch.number == null) delete patch.number;
-  await updateDoc(ref, patch);
+  await updateDoc(ref, values);
 }
 
 export async function deleteGoalie(id: string) {
@@ -52,14 +59,21 @@ export async function deleteGoalie(id: string) {
 
 export async function incrementGoalieStats(
   id: string,
-  deltas: { gs: number; sa: number; sv: number; w: number; so: number },
+  deltas: {
+    gs_delta: number;
+    sa_delta: number;
+    sv_delta: number;
+    w_delta: number;
+    so_delta: number;
+  },
 ) {
   const ref = doc(colRef, id);
+
   await updateDoc(ref, {
-    games_started: increment(deltas.gs),
-    shots_against: increment(deltas.sa),
-    saves: increment(deltas.sv),
-    wins: increment(deltas.w),
-    shutouts: increment(deltas.so),
+    games_started: increment(deltas.gs_delta),
+    shots_against: increment(deltas.sa_delta),
+    saves: increment(deltas.sv_delta),
+    wins: increment(deltas.w_delta),
+    shutouts: increment(deltas.so_delta),
   });
 }

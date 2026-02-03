@@ -1,134 +1,133 @@
 import React from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useGoalies } from '../../src/hooks/useGoalies';
 
 export default function GoaliesScreen() {
-  const { goalies, isLoading, error } = useGoalies();
+  const { goalies, isLoading, isError, refetch, isFetching } = useGoalies();
 
   if (isLoading) {
     return (
-      <View style={styles.center}>
+      <SafeAreaView style={styles.center}>
         <ActivityIndicator />
-        <Text style={styles.helperText}>Carregando...</Text>
-      </View>
+        <Text style={styles.muted}>Carregando goalies...</Text>
+      </SafeAreaView>
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Erro ao carregar</Text>
-      </View>
+      <SafeAreaView style={styles.center}>
+        <Text style={styles.title}>Chicago Blackhawks — Goalies</Text>
+        <Text style={styles.error}>Erro ao carregar goalies.</Text>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.safe}>
+    <SafeAreaView style={styles.screen}>
       <Text style={styles.title}>Chicago Blackhawks — Goalies</Text>
 
-      {/* Header da “tabela” */}
-      <View style={[styles.row, styles.headerRow]}>
-        <Text style={[styles.headerCell, styles.playerCol]}>Jogador</Text>
-        <Text style={[styles.headerCell, styles.statCol]}>GS</Text>
-        <Text style={[styles.headerCell, styles.statCol]}>SA</Text>
-        <Text style={[styles.headerCell, styles.statCol]}>SV</Text>
-        <Text style={[styles.headerCell, styles.statCol]}>SV%</Text>
-        <Text style={[styles.headerCell, styles.statCol]}>W</Text>
-        <Text style={[styles.headerCell, styles.statCol]}>SO</Text>
+      <View style={styles.headerRow}>
+        <Text style={[styles.headerCell, styles.flex2, styles.headerLeft]}>Goleiro</Text>
+        <Text style={styles.headerCell}>GS</Text>
+        <Text style={styles.headerCell}>SA</Text>
+        <Text style={styles.headerCell}>SV</Text>
+        <Text style={styles.headerCell}>SV%</Text>
+        <Text style={styles.headerCell}>W</Text>
+        <Text style={styles.headerCell}>SO</Text>
       </View>
+
+      <View style={styles.separator} />
 
       <FlatList
         data={goalies}
-        keyExtractor={(i) => i.id}
-        contentContainerStyle={styles.listContent}
+        keyExtractor={(item) => item.id}
+        refreshing={isFetching}
+        onRefresh={refetch}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
         renderItem={({ item }) => (
           <View style={styles.row}>
-            <View style={styles.playerCol}>
-              <Text style={styles.playerName}>
-                {item.name} #{item.number ?? '-'}
-              </Text>
-              <Text style={styles.playerMeta}>{item.position}</Text>
+            <View style={[styles.flex2, styles.playerCol]}>
+              <Text style={styles.playerName}>{item.name}</Text>
             </View>
 
-            <Text style={styles.statCol}>{item.games_started}</Text>
-            <Text style={styles.statCol}>{item.shots_against}</Text>
-            <Text style={styles.statCol}>{item.saves}</Text>
-            <Text style={styles.statCol}>{item.save_pct}</Text>
-            <Text style={styles.statCol}>{item.wins}</Text>
-            <Text style={styles.statCol}>{item.shutouts}</Text>
+            <Text style={styles.cell}>{item.games_started}</Text>
+            <Text style={styles.cell}>{item.shots_against}</Text>
+            <Text style={styles.cell}>{item.saves}</Text>
+            <Text style={styles.cell}>{item.save_pct.toFixed(1)}</Text>
+            <Text style={styles.cell}>{item.wins}</Text>
+            <Text style={styles.cell}>{item.shutouts}</Text>
           </View>
         )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
+  screen: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  center: {
     flex: 1,
     padding: 16,
-    paddingTop: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   title: {
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 12,
   },
-  listContent: {
-    paddingBottom: 24,
-  },
-  center: {
-    flex: 1,
+  headerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    padding: 16,
+    marginBottom: 4,
   },
-  helperText: {
-    opacity: 0.7,
-  },
-  errorText: {
-    color: '#b00020',
+  headerCell: {
+    flex: 1,
     fontWeight: '600',
+    textAlign: 'right',
+    fontSize: 12,
+    color: '#4b5563',
   },
-
+  headerLeft: {
+    textAlign: 'left',
+  },
+  flex2: {
+    flex: 2,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-  },
-  headerRow: {
     paddingVertical: 10,
-    marginBottom: 6,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#D1D5DB',
   },
   separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#E5E7EB',
-    marginHorizontal: 8,
-  },
-
-  headerCell: {
-    fontWeight: '700',
+    height: 1,
+    backgroundColor: '#e5e7eb',
   },
   playerCol: {
-    flex: 2,
-    paddingRight: 8,
+    justifyContent: 'center',
   },
-  statCol: {
-    width: 44, // ~w={10} do NativeBase (aproximação visual)
-    textAlign: 'right',
-  },
-
   playerName: {
-    fontWeight: '700',
+    fontWeight: '500',
+    fontSize: 14,
   },
-  playerMeta: {
-    marginTop: 2,
-    opacity: 0.65,
-    fontSize: 12,
+  cell: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 14,
+  },
+  muted: {
+    color: '#6b7280',
+  },
+  error: {
+    color: '#b91c1c',
+    marginTop: 8,
   },
 });
