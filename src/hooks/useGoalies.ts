@@ -1,17 +1,28 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-// import type { Goalie } from "../types/goalie";
 import { listGoalies, incrementGoalieStats } from '../services/goalies.firestore';
 
-export function useGoalies() {
-  const qc = useQueryClient();
+export { type Goalie } from '../services/goalies.firestore';
 
-  const query = useQuery({
+export function useGoalies() {
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['goalies'],
     queryFn: listGoalies,
   });
 
-  const incrementMutation = useMutation({
-    mutationFn: async (payload: {
+  return {
+    goalies: data ?? [],
+    isLoading,
+    isFetching,
+    isError: !!error,
+    refetch,
+  };
+}
+
+export function useIncrementGoalie() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: {
       goalie_id: string;
       gs_delta: number;
       sa_delta: number;
@@ -20,25 +31,14 @@ export function useGoalies() {
       so_delta: number;
     }) =>
       incrementGoalieStats(payload.goalie_id, {
-        gs: payload.gs_delta,
-        sa: payload.sa_delta,
-        sv: payload.sv_delta,
-        w: payload.w_delta,
-        so: payload.so_delta,
+        gs_delta: payload.gs_delta,
+        sa_delta: payload.sa_delta,
+        sv_delta: payload.sv_delta,
+        w_delta: payload.w_delta,
+        so_delta: payload.so_delta,
       }),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['goalies'] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goalies'] });
     },
   });
-
-  return {
-    goalies: query.data ?? [],
-    isLoading: query.isLoading,
-    isFetching: query.isFetching,
-    isError: query.isError,
-    error: (query.error as Error) ?? null,
-    refetch: query.refetch,
-    incrementStats: incrementMutation.mutateAsync,
-    isIncrementing: incrementMutation.isPending,
-  };
 }
